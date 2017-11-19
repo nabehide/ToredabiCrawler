@@ -4,4 +4,5 @@ from private import username, password
 
 td = TradeDerby(username, password)
 td.login()
+td.getSuggestedStock()
 td.close()
