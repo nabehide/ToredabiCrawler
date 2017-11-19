@@ -1,0 +1,4 @@
+- add MIT license
+- make utility
+- store stock amount
+- add requirements.txt and describe it in README

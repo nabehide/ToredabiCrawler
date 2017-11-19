@@ -1,5 +1,5 @@
 # ToredabiCrawler
-This is script for crawler in TradeDerby using Headless Chrome.
+This is script for crawler in TradeDerby using (Headless) Chrome.
 
 ## How to use
 ### Prepare account information
