@@ -7,12 +7,12 @@ from parameter import mainURL, loginPath
 
 
 class TradeDerby(object):
-    def __init__(self, username, password):
+    def __init__(self, username, password, headless=True):
         self.username = username
         self.password = password
 
         options = Options()
-        options.add_argument("--headless")
+        if headless:    options.add_argument("--headless")
         self.driver = webdriver.Chrome(
             "./chromedriver", chrome_options=options)
         self.driver.get(mainURL)
@@ -42,9 +42,9 @@ class TradeDerby(object):
             except (TypeError, AttributeError):
                 pass
 
-        print(list(stock.keys()))
+        # print(list(stock.keys()))
         key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
-        print("key", key)
+        # print("key", key)
         url = stock[key[0]]
 
         return url
