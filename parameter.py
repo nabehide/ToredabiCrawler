@@ -1,6 +1,8 @@
 mainURL = "https://www.k-zone.co.jp"
+
 loginPath = "/td/users/login"
 PositionHoldPath = "/td/dashboards/position_hold"
+orderPath = "/td/orders"
 suggestPath = ("/td/quotes/query?query=&exch=&"
                "jsec=&command=spot_buy&idx1=&lospl=&losph=&mkcpl=&"
                "mkcph=&cpbrl=&cpbrh=&cperl=&cperh=&suggest=2&"
