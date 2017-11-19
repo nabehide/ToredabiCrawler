@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from parameter import mainURL, loginPath
+from parameter import mainURL, loginPath, suggestPath, PositionHoldPath
 
 
 class TradeDerby(object):
@@ -11,25 +11,24 @@ class TradeDerby(object):
         self.username = username
         self.password = password
 
+        self.hold = {}
+
         options = Options()
-        if headless:    options.add_argument("--headless")
+        if headless:
+            options.add_argument("--headless")
         self.driver = webdriver.Chrome(
             "./chromedriver", chrome_options=options)
         self.driver.get(mainURL)
 
     def login(self):
-        loginURL = "https://www.k-zone.co.jp/" + loginPath
+        loginURL = mainURL + loginPath
         self.driver.get(loginURL)
         self.driver.find_element_by_name("login").send_keys(self.username)
         self.driver.find_element_by_name("password").send_keys(self.password)
         self.driver.find_element_by_id("login_button").click()
 
     def getSuggestedURL(self):
-        searchURL = ("https://www.k-zone.co.jp/td/quotes/query?query=&exch=&"
-                     "jsec=&command=spot_buy&idx1=&lospl=&losph=&mkcpl=&"
-                     "mkcph=&cpbrl=&cpbrh=&cperl=&cperh=&suggest=2&"
-                     "safety=true&sort_rank1=quote_code+asc")
-        self.driver.get(searchURL)
+        self.driver.get(mainURL + suggestPath)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
         stock = {}
@@ -47,9 +46,19 @@ class TradeDerby(object):
         # print("key", key)
         url = stock[key[0]]
 
-        return url
+        return key[0], url
 
-    def buy(self, url):
+    def updatePositionHold(self):
+        self.driver.get(mainURL + PositionHoldPath)
+        text = self.driver.page_source
+        soup = BeautifulSoup(text, "html.parser")
+        for tag in soup.select(".stockData"):
+            tagQuote = tag.find(href=re.compile("/td/quotes"))
+            stockName = tagQuote.text
+            url = mainURL + tagQuote.get("href")
+            self.hold[stockName] = url
+
+    def buy(self, name, url):
         self.driver.get(url)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -59,10 +68,11 @@ class TradeDerby(object):
         self.driver.get(url)
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
+        print("Success buy: ", name)
 
     def close(self):
         self.driver.quit()
 
     def getSuggestedStock(self):
-        suggestedURL = self.getSuggestedURL()
-        self.buy(suggestedURL)
+        suggestedName, suggestedURL = self.getSuggestedURL()
+        self.buy(suggestedName, suggestedURL)

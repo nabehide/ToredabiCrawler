@@ -12,4 +12,4 @@ password = "YOUR_PASSWORD"
 ```
 
 ### Crawl in TradeDerby
-- Please refer "example.py"
+- Please refer to "example.py".
