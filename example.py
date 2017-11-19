@@ -5,11 +5,12 @@ from private import username, password
 td = TradeDerby(username, password, headless=True, debug=True)
 td.login()
 
-td.getSuggestedStock()
-
 td.updatePositionHold()
 print("Current hold")
 print(td.hold["name"])
+
+td.getSuggestedStock()
+td.sellRandom()
 
 td.updateOrder()
 print("Ordering", td.orderURL.keys())

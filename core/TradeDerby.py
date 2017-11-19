@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -15,7 +16,7 @@ class TradeDerby(object):
         self.password = password
         self.debug = debug
 
-        self.columnsHold = ["name", "rateDay", "rateHold", "URL"]
+        self.columnsHold = ["name", "URL", "rateDay", "rateHold", "sellURL"]
         self.hold = pd.DataFrame(columns=self.columnsHold)
         self.orderURL = {}
 
@@ -71,12 +72,14 @@ class TradeDerby(object):
             tagALR = tag.select(".alR")
             rateDay = tagALR[len(tagALR) - 2].text
             rateOwn = tagALR[len(tagALR) - 1].text
+            sellURL = mainURL + tag.select(".sell")[0].get("href")
 
-            self.hold = self.hold.append(pd.DataFrame(
-                [[stockName, url, rateDay, rateOwn]],
-                columns=self.columnsHold,
-                ignore_index=True,
-            ))
+            self.hold = self.hold.append(
+                pd.DataFrame(
+                    [[stockName, url, rateDay, rateOwn, sellURL]],
+                    columns=self.columnsHold,
+                ), ignore_index=True
+            )
 
     def updateOrder(self):
         self.driver.get(mainURL + orderPath)
@@ -109,7 +112,11 @@ class TradeDerby(object):
             print("Success buy: ", name)
 
     def sell(self, name, url):
-        pass
+        self.driver.get(url)
+        self.driver.find_element_by_class_name("transition").click()
+        self.driver.find_elements_by_class_name("transition")[1].click()
+        if self.debug:
+            print("Success sell: ", name)
 
     def close(self):
         self.driver.quit()
@@ -119,3 +126,13 @@ class TradeDerby(object):
     def getSuggestedStock(self):
         suggestedName, suggestedURL = self.getSuggestedURL()
         self.buy(suggestedName, suggestedURL)
+
+    def sellRandom(self):
+        if len(self.hold) == 0:
+            print("There is no stock")
+            return False
+
+        idx = np.random.randint(len(self.hold))
+        name = self.hold["name"].iloc[idx]
+        url = self.hold["sellURL"].iloc[idx]
+        self.sell(name, url)
