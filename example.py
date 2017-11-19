@@ -8,9 +8,10 @@ td.login()
 td.getSuggestedStock()
 
 td.updatePositionHold()
-print("Current hold", td.hold.keys())
+print("Current hold")
+print(td.hold["name"])
 
 td.updateOrder()
-print("Ordering", td.order.keys())
+print("Ordering", td.orderURL.keys())
 
 td.close()

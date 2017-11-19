@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -14,8 +15,9 @@ class TradeDerby(object):
         self.password = password
         self.debug = debug
 
-        self.hold = {}
-        self.order = {}
+        self.columnsHold = ["name", "rateDay", "rateHold", "URL"]
+        self.hold = pd.DataFrame(columns=self.columnsHold)
+        self.orderURL = {}
 
         options = Options()
         if headless:
@@ -66,7 +68,15 @@ class TradeDerby(object):
             tagQuote = tag.find(href=re.compile("/td/quotes"))
             stockName = tagQuote.text
             url = mainURL + tagQuote.get("href")
-            self.hold[stockName] = url
+            tagALR = tag.select(".alR")
+            rateDay = tagALR[len(tagALR) - 2].text
+            rateOwn = tagALR[len(tagALR) - 1].text
+
+            self.hold = self.hold.append(pd.DataFrame(
+                [[stockName, url, rateDay, rateOwn]],
+                columns=self.columnsHold,
+                ignore_index=True,
+            ))
 
     def updateOrder(self):
         self.driver.get(mainURL + orderPath)
@@ -81,7 +91,7 @@ class TradeDerby(object):
                     tagQuote = tag.find(href=re.compile("/td/quotes"))
                     stockName = tagQuote.text
                     url = mainURL + tagQuote.get("href")
-                    self.order[stockName] = url
+                    self.orderURL[stockName] = url
             except (TypeError, AttributeError, IndexError):
                 pass
 
@@ -97,6 +107,9 @@ class TradeDerby(object):
         self.driver.find_elements_by_class_name("transition")[1].click()
         if self.debug:
             print("Success buy: ", name)
+
+    def sell(self, name, url):
+        pass
 
     def close(self):
         self.driver.quit()
