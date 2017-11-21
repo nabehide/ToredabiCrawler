@@ -2,14 +2,17 @@ from core.TradeDerby import TradeDerby
 from private import username, password
 
 
-td = TradeDerby(username, password, headless=True, debug=True)
+account = {"username": username, "password": password}
+config = {"headless": True, "debug": True}
+
+td = TradeDerby(account, config)
 td.login()
 
 td.updatePositionHold()
 print("Current hold")
 print(td.hold["name"])
 
-td.getSuggestedStock()
+td.buySuggestedStock()
 td.sellRandom()
 
 td.updateOrder()

@@ -11,17 +11,18 @@ from parameter import (
 
 
 class TradeDerby(object):
-    def __init__(self, username, password, headless=True, debug=False):
-        self.username = username
-        self.password = password
-        self.debug = debug
+    def __init__(self, account, config):
+        self.username = account["username"]
+        self.password = account["password"]
+        self.debug = config["debug"]
+        self.headless = config["headless"]
 
         self.columnsHold = ["name", "URL", "rateDay", "rateHold", "sellURL"]
         self.hold = pd.DataFrame(columns=self.columnsHold)
         self.orderURL = {}
 
         options = Options()
-        if headless:
+        if self.headless:
             options.add_argument("--headless")
         self.driver = webdriver.Chrome(
             "./chromedriver", chrome_options=options)
@@ -40,7 +41,7 @@ class TradeDerby(object):
         if self.debug:
             print("Success login")
 
-    def getSuggestedURL(self):
+    def _getSuggestedURL(self):
         self.driver.get(mainURL + suggestPath)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -66,20 +67,24 @@ class TradeDerby(object):
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
         for tag in soup.select(".stockData"):
-            tagQuote = tag.find(href=re.compile("/td/quotes"))
-            stockName = tagQuote.text
-            url = mainURL + tagQuote.get("href")
-            tagALR = tag.select(".alR")
-            rateDay = tagALR[len(tagALR) - 2].text
-            rateOwn = tagALR[len(tagALR) - 1].text
-            sellURL = mainURL + tag.select(".sell")[0].get("href")
-
-            self.hold = self.hold.append(
-                pd.DataFrame(
-                    [[stockName, url, rateDay, rateOwn, sellURL]],
-                    columns=self.columnsHold,
-                ), ignore_index=True
-            )
+            try:
+                tagQuote = tag.find(href=re.compile("/td/quotes"))
+                stockName = tagQuote.text
+                url = mainURL + tagQuote.get("href")
+                tagALR = tag.select(".alR")
+                rateDay = tagALR[len(tagALR) - 2].text
+                rateOwn = tagALR[len(tagALR) - 1].text
+                sellURL = mainURL + tag.select(".sell")[0].get("href")
+                self.hold = self.hold.append(
+                    pd.DataFrame(
+                        [[stockName, url, rateDay, rateOwn, sellURL]],
+                        columns=self.columnsHold,
+                    ), ignore_index=True
+                )
+            except IndexError:
+                pass
+        if self.debug:
+            print("Success updatePositionHold")
 
     def updateOrder(self):
         self.driver.get(mainURL + orderPath)
@@ -97,8 +102,10 @@ class TradeDerby(object):
                     self.orderURL[stockName] = url
             except (TypeError, AttributeError, IndexError):
                 pass
+        if self.debug:
+            print("Success update order")
 
-    def buy(self, name, url):
+    def _buy(self, name, url):
         self.driver.get(url)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -111,7 +118,7 @@ class TradeDerby(object):
         if self.debug:
             print("Success buy: ", name)
 
-    def sell(self, name, url):
+    def _sell(self, name, url):
         self.driver.get(url)
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
@@ -123,9 +130,11 @@ class TradeDerby(object):
         if self.debug:
             print("Success close")
 
-    def getSuggestedStock(self):
-        suggestedName, suggestedURL = self.getSuggestedURL()
-        self.buy(suggestedName, suggestedURL)
+    def buySuggestedStock(self):
+        suggestedName, suggestedURL = self._getSuggestedURL()
+        self._buy(suggestedName, suggestedURL)
+        if self.debug:
+            print("Success buy suggested stock")
 
     def sellRandom(self):
         if len(self.hold) == 0:
@@ -135,4 +144,6 @@ class TradeDerby(object):
         idx = np.random.randint(len(self.hold))
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
-        self.sell(name, url)
+        self._sell(name, url)
+        if self.debug:
+            print("Success sell random")
