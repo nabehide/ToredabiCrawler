@@ -3,7 +3,7 @@ from private import username, password
 
 
 account = {"username": username, "password": password}
-config = {"headless": True, "debug": True}
+config = {"headless": False, "debug": True}
 
 td = TradeDerby(account, config)
 td.login()
