@@ -17,7 +17,10 @@ class TradeDerby(object):
         self.debug = config["debug"]
         self.headless = config["headless"]
 
-        self.columnsHold = ["name", "URL", "rateDay", "rateHold", "sellURL"]
+        self.columnsHold = [
+            "name", "URL", "rateDay", "rateHold", "sellURL", "quantity",
+            "star", "safety", "unitPrice",
+        ]
         self.hold = pd.DataFrame(columns=self.columnsHold)
         self.orderURL = {}
 
@@ -58,9 +61,15 @@ class TradeDerby(object):
         # print(list(stock.keys()))
         key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
         # print("key", key)
-        url = stock[key[0]]
+        if len(key) == 0:
+            return False
+        else:
+            url = stock[key[0]]
+            return key[0], url
 
-        return key[0], url
+    def showPositionHold(self):
+        columnsShow = [i for i in self.columnsHold if "URL" not in i]
+        print(self.hold[columnsShow])
 
     def updatePositionHold(self):
         self.driver.get(mainURL + PositionHoldPath)
@@ -75,9 +84,21 @@ class TradeDerby(object):
                 rateDay = tagALR[len(tagALR) - 2].text
                 rateOwn = tagALR[len(tagALR) - 1].text
                 sellURL = mainURL + tag.select(".sell")[0].get("href")
+                quantity = tagALR[0].text
+                star = -3
+                for i in range(-2, 3):
+                    star = tag.select(".omamoriSuggest")[0].select(
+                        ".omamoriSuggestStar" + str(i))
+                    if len(star) != 0:
+                        star = i
+                        break
+                safety = True if len(
+                    tag.select(".omamoriSafety")[0]) != 0 else False
+                unitPrice = tagALR[2].text
                 self.hold = self.hold.append(
                     pd.DataFrame(
-                        [[stockName, url, rateDay, rateOwn, sellURL]],
+                        [[stockName, url, rateDay, rateOwn, sellURL, quantity,
+                          star, safety, unitPrice]],
                         columns=self.columnsHold,
                     ), ignore_index=True
                 )
@@ -131,8 +152,13 @@ class TradeDerby(object):
             print("Success close")
 
     def buySuggestedStock(self):
-        suggestedName, suggestedURL = self._getSuggestedURL()
-        self._buy(suggestedName, suggestedURL)
+        suggested = self._getSuggestedURL()
+        if suggested is False:
+            if self.debug:
+                print("Not found Suggested")
+            return False
+        else:
+            self._buy(suggested[0], suggested[1])
         if self.debug:
             print("Success buy suggested stock")
 
