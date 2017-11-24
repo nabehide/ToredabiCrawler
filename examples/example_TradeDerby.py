@@ -1,4 +1,4 @@
-from core.TradeDerby import TradeDerby
+from ToredabiCrawler.TradeDerby import TradeDerby
 from private import username, password
 
 

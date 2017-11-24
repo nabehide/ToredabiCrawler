@@ -2,6 +2,7 @@ private.py
 chromedriver
 chromedriver.exe
 
+build
 __pycache__
 *~
 .coverage

@@ -1,5 +1,5 @@
 import re
-import numpy as np
+import random
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -141,7 +141,7 @@ class TradeDerby(object):
             print("There is no stock")
             return False
 
-        idx = np.random.randint(len(self.hold))
+        idx = random.randint(0, len(self.hold))
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
         self._sell(name, url)

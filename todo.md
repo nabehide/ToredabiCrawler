@@ -1,10 +1,6 @@
-- add MIT license
 - store stock amount
 - split core/TradeDerby.py into buy and sell or something
 - sell the profitable stock
-- scheduler
-- buy a stock every X hours when there is enough money
-- command input
+- buy a stock when there is enough money
 - add requirements.txt and describe it in README
 - check Python version dependency
-- packaging
