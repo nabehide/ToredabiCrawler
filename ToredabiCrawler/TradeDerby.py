@@ -67,11 +67,17 @@ class TradeDerby(object):
             url = stock[key[0]]
             return key[0], url
 
+    def showOrder(self):
+        for i in range(len(self.orderURL)):
+            print(list(self.orderURL.keys())[i])
+
     def showPositionHold(self):
         columnsShow = [i for i in self.columnsHold if "URL" not in i]
         print(self.hold[columnsShow])
 
     def updatePositionHold(self):
+        self.hold = pd.DataFrame(columns=self.columnsHold)
+
         self.driver.get(mainURL + PositionHoldPath)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -81,8 +87,8 @@ class TradeDerby(object):
                 stockName = tagQuote.text
                 url = mainURL + tagQuote.get("href")
                 tagALR = tag.select(".alR")
-                rateDay = tagALR[len(tagALR) - 2].text
-                rateOwn = tagALR[len(tagALR) - 1].text
+                rateDay = float(tagALR[len(tagALR) - 2].text[:-2])
+                rateOwn = float(tagALR[len(tagALR) - 1].text[:-2])
                 sellURL = mainURL + tag.select(".sell")[0].get("href")
                 quantity = tagALR[0].text
                 star = -3
@@ -108,6 +114,8 @@ class TradeDerby(object):
             print("Success updatePositionHold")
 
     def updateOrder(self):
+        self.orderURL = {}
+
         self.driver.get(mainURL + orderPath)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -173,3 +181,33 @@ class TradeDerby(object):
         self._sell(name, url)
         if self.debug:
             print("Success sell random")
+
+    def sellCutLoss(self):
+        candidate = self.hold[self.hold["star"] <= 0]
+        for i in range(len(candidate)):
+            name = candidate.iloc[i].loc["name"]
+            url = candidate.iloc[i].loc["sellURL"]
+            self._sell(name, url)
+
+        self.hold = self.hold[0 < self.hold["star"]]
+
+        if self.debug:
+            print("Success sell cut loss")
+
+    def sellProfitable(self):
+        candidate = self.hold[
+            (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
+        ]
+        if len(candidate) == 0:
+            if self.debug:
+                print("No candidate")
+        else:
+            for i in range(len(candidate)):
+                name = candidate.iloc[i].loc["name"]
+                url = candidate.iloc[i].loc["sellURL"]
+                self._sell(name, url)
+
+            self.hold = self.hold[0 < self.hold["star"]]
+
+            if self.debug:
+                print("Success sell cut loss")
