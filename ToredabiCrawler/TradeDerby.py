@@ -34,18 +34,19 @@ class TradeDerby(object):
         if self.headless:
             self.options.add_argument("--headless")
 
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success init"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success init")
+            print(message)
 
     def open(self):
         self.driver = webdriver.Chrome(
             "./chromedriver", chrome_options=self.options)
         self.driver.get(mainURL)
 
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success open"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success open")
+            print(message)
+        return message
 
     def login(self):
         loginURL = mainURL + loginPath
@@ -54,9 +55,10 @@ class TradeDerby(object):
         self.driver.find_element_by_name("password").send_keys(self.password)
         self.driver.find_element_by_id("login_button").click()
 
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success login"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success login")
+            print(message)
+        return message
 
     def _getSuggestedURL(self):
         self.driver.get(mainURL + suggestPath)
@@ -101,9 +103,10 @@ class TradeDerby(object):
         self.status = False if soup.select(".state_3")[0].select(
             ".state_body")[0].text == u"終了" else True
 
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success get status"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success get status")
+            print(message)
+        return message
 
     def showStatus(self):
         print("asset :", self.asset)
@@ -152,9 +155,11 @@ class TradeDerby(object):
                 )
             except IndexError:
                 pass
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success updatePositionHold"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success updatePositionHold")
+            print(message)
+        return message
 
     def updateOrder(self):
         self.orderURL = {}
@@ -174,9 +179,11 @@ class TradeDerby(object):
                     self.orderURL[stockName] = url
             except (TypeError, AttributeError, IndexError):
                 pass
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success update order"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success update order")
+            print(message)
+        return message
 
     def _buy(self, name, url):
         self.driver.get(url)
@@ -188,36 +195,44 @@ class TradeDerby(object):
         self.driver.get(url)
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy: " + name
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success buy: ", name)
+            print(message)
+        return message
 
     def _sell(self, name, url):
         self.driver.get(url)
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell: " + name
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success sell: ", name)
+            print(message)
+        return message
 
     def close(self):
         self.driver.quit()
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success close"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success close")
+            print(message)
+        return message
 
     def buySuggestedStock(self):
         suggested = self._getSuggestedURL()
         if suggested is False:
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail buy suggested stock: Not found"
             if self.debug:
-                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-                print("Fail buy suggested stock: Not found")
-            return False
+                print(message)
+            return message
         else:
             self._buy(suggested[0], suggested[1])
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy suggested stock"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success buy suggested stock")
+            print(message)
+        return message
 
     def sellRandom(self):
         if len(self.hold) == 0:
@@ -228,9 +243,11 @@ class TradeDerby(object):
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
         self._sell(name, url)
+
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell random"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success sell random")
+            print(message)
+        return message
 
     def sellCutLoss(self):
         candidate = self.hold[self.hold["star"] <= 0]
@@ -241,18 +258,20 @@ class TradeDerby(object):
 
         self.hold = self.hold[0 < self.hold["star"]]
 
+        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell cut loss"
         if self.debug:
-            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-            print("Success sell cut loss")
+            print(message)
+        return message
 
     def sellProfitable(self):
         candidate = self.hold[
             (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
         ]
         if len(candidate) == 0:
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail sell profirable: No candidate"
             if self.debug:
-                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-                print("Fail sell profirable: No candidate")
+                print(message)
+            return message
         else:
             for i in range(len(candidate)):
                 name = candidate.iloc[i].loc["name"]
@@ -261,9 +280,10 @@ class TradeDerby(object):
 
             self.hold = self.hold[0 < self.hold["star"]]
 
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell cut loss"
             if self.debug:
-                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-                print("Success sell cut loss")
+                print(message)
+            return message
 
     def toredabiRoutine(self):
         self.getStatus()
@@ -273,6 +293,13 @@ class TradeDerby(object):
             self.buySuggestedStock()
             self.sellProfitable()
             self.sellCutLoss()
+
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success routine"
             if self.debug:
-                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
-                print("Success routine")
+                print(message)
+            return message
+        else:
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail routine: Closed"
+            if self.debug:
+                print(message)
+            return message
