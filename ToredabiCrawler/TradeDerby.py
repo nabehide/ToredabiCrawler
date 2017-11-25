@@ -30,16 +30,22 @@ class TradeDerby(object):
         self.asset = 0
         self.status = False
 
-        options = Options()
+        self.options = Options()
         if self.headless:
-            options.add_argument("--headless")
-        self.driver = webdriver.Chrome(
-            "./chromedriver", chrome_options=options)
-        self.driver.get(mainURL)
+            self.options.add_argument("--headless")
 
         if self.debug:
             print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success init")
+
+    def open(self):
+        self.driver = webdriver.Chrome(
+            "./chromedriver", chrome_options=self.options)
+        self.driver.get(mainURL)
+
+        if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
+            print("Success open")
 
     def login(self):
         loginURL = mainURL + loginPath
@@ -66,14 +72,25 @@ class TradeDerby(object):
             except (TypeError, AttributeError):
                 pass
 
-        # print(list(stock.keys()))
         key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
-        # print("key", key)
-        if len(key) == 0:
+        extractedKey = []
+        for i in key:
+            flag = True
+            for j in list(self.orderURL):
+                if i in j:
+                    flag = False
+                    break
+            for j in list(self.hold["name"]):
+                if flag and i in j:
+                    flag = False
+                    break
+            if flag:
+                extractedKey.append(i)
+        if len(extractedKey) == 0:
             return False
         else:
-            url = stock[key[0]]
-            return key[0], url
+            url = stock[extractedKey[0]]
+            return extractedKey[0], url
 
     def getStatus(self):
         self.driver.get(mainURL + dashboardsPath)
@@ -252,6 +269,7 @@ class TradeDerby(object):
         self.getStatus()
         if self.status:
             self.updatePositionHold()
+            self.updateOrder()
             self.buySuggestedStock()
             self.sellProfitable()
             self.sellCutLoss()
