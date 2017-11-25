@@ -1,5 +1,6 @@
 - split ToredabiCrawler/TradeDerby.py into buy and sell or something
 - buy a stock when there is enough money
+- check duplicated buying and hold
 - describe about requirements.txt in README
 - check Python version dependency
 - register pip

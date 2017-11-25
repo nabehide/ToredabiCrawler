@@ -2,6 +2,7 @@
 
 import re
 import random
+from datetime import datetime
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -37,6 +38,7 @@ class TradeDerby(object):
         self.driver.get(mainURL)
 
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success init")
 
     def login(self):
@@ -47,6 +49,7 @@ class TradeDerby(object):
         self.driver.find_element_by_id("login_button").click()
 
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success login")
 
     def _getSuggestedURL(self):
@@ -82,6 +85,7 @@ class TradeDerby(object):
             ".state_body")[0].text == u"終了" else True
 
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success get status")
 
     def showStatus(self):
@@ -132,6 +136,7 @@ class TradeDerby(object):
             except IndexError:
                 pass
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success updatePositionHold")
 
     def updateOrder(self):
@@ -153,6 +158,7 @@ class TradeDerby(object):
             except (TypeError, AttributeError, IndexError):
                 pass
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success update order")
 
     def _buy(self, name, url):
@@ -166,6 +172,7 @@ class TradeDerby(object):
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success buy: ", name)
 
     def _sell(self, name, url):
@@ -173,22 +180,26 @@ class TradeDerby(object):
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success sell: ", name)
 
     def close(self):
         self.driver.quit()
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success close")
 
     def buySuggestedStock(self):
         suggested = self._getSuggestedURL()
         if suggested is False:
             if self.debug:
-                print("Not found Suggested")
+                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
+                print("Fail buy suggested stock: Not found")
             return False
         else:
             self._buy(suggested[0], suggested[1])
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success buy suggested stock")
 
     def sellRandom(self):
@@ -201,6 +212,7 @@ class TradeDerby(object):
         url = self.hold["sellURL"].iloc[idx]
         self._sell(name, url)
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success sell random")
 
     def sellCutLoss(self):
@@ -213,6 +225,7 @@ class TradeDerby(object):
         self.hold = self.hold[0 < self.hold["star"]]
 
         if self.debug:
+            print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
             print("Success sell cut loss")
 
     def sellProfitable(self):
@@ -221,7 +234,8 @@ class TradeDerby(object):
         ]
         if len(candidate) == 0:
             if self.debug:
-                print("No candidate")
+                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
+                print("Fail sell profirable: No candidate")
         else:
             for i in range(len(candidate)):
                 name = candidate.iloc[i].loc["name"]
@@ -231,6 +245,7 @@ class TradeDerby(object):
             self.hold = self.hold[0 < self.hold["star"]]
 
             if self.debug:
+                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
                 print("Success sell cut loss")
 
     def toredabiRoutine(self):
@@ -240,3 +255,6 @@ class TradeDerby(object):
             self.buySuggestedStock()
             self.sellProfitable()
             self.sellCutLoss()
+            if self.debug:
+                print(datetime.now().strftime("[%Y-%m-%d %H:%M:%S] "), end="")
+                print("Success routine")
