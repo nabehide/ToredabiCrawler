@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import re
 import random
 import pandas as pd
@@ -7,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 
 from ToredabiCrawler.parameter import (
     mainURL, loginPath, suggestPath, PositionHoldPath, orderPath,
+    dashboardsPath,
 )
 
 
@@ -23,6 +26,8 @@ class TradeDerby(object):
         ]
         self.hold = pd.DataFrame(columns=self.columnsHold)
         self.orderURL = {}
+        self.asset = 0
+        self.status = False
 
         options = Options()
         if self.headless:
@@ -66,6 +71,22 @@ class TradeDerby(object):
         else:
             url = stock[key[0]]
             return key[0], url
+
+    def getStatus(self):
+        self.driver.get(mainURL + dashboardsPath)
+        text = self.driver.page_source
+        soup = BeautifulSoup(text, "html.parser")
+        self.asset = int(soup.select(".leftTable")[0].select(
+            ".downRow")[2].select(".alR")[0].text[:-1].replace(",", ""))
+        self.status = False if soup.select(".state_3")[0].select(
+            ".state_body")[0].text == u"終了" else True
+
+        if self.debug:
+            print("Success get status")
+
+    def showStatus(self):
+        print("asset :", self.asset)
+        print("status:", self.status)
 
     def showOrder(self):
         for i in range(len(self.orderURL)):
@@ -211,3 +232,11 @@ class TradeDerby(object):
 
             if self.debug:
                 print("Success sell cut loss")
+
+    def toredabiRoutine(self):
+        self.getStatus()
+        if self.status:
+            self.updatePositionHold()
+            self.buySuggestedStock()
+            self.sellProfitable()
+            self.sellCutLoss()

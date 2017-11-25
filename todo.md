@@ -2,3 +2,5 @@
 - buy a stock when there is enough money
 - add requirements.txt and describe it in README
 - check Python version dependency
+- register pip
+- test
