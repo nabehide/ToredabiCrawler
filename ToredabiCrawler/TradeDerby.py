@@ -288,16 +288,17 @@ class TradeDerby(object):
     def toredabiRoutine(self):
         self.getStatus()
         if self.status:
-            self.updatePositionHold()
-            self.updateOrder()
-            self.buySuggestedStock()
-            self.sellProfitable()
-            self.sellCutLoss()
+            ret = ""
+            ret += self.updatePositionHold() + "\n"
+            ret += self.updateOrder() + "\n"
+            ret += self.buySuggestedStock() + "\n"
+            ret += self.sellProfitable() + "\n"
+            ret += self.sellCutLoss() + "\n"
 
             message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success routine"
             if self.debug:
                 print(message)
-            return message
+            return ret + message
         else:
             message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail routine: Closed"
             if self.debug:
