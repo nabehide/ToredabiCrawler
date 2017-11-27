@@ -100,8 +100,11 @@ class TradeDerby(object):
         soup = BeautifulSoup(text, "html.parser")
         self.asset = int(soup.select(".leftTable")[0].select(
             ".downRow")[2].select(".alR")[0].text[:-1].replace(",", ""))
-        self.status = False if soup.select(".state_3")[0].select(
-            ".state_body")[0].text == u"終了" else True
+        try:
+            self.status = False if soup.select(".state_3")[0].select(
+                ".state_body")[0].text == u"終了" else True
+        except IndexError:
+            self.status = False
 
         message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success get status"
         if self.debug:
