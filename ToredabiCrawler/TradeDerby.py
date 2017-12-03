@@ -98,11 +98,11 @@ class TradeDerby(object):
         self.driver.get(mainURL + dashboardsPath)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
-        self.asset = int(soup.select(".leftTable")[0].select(
-            ".downRow")[2].select(".alR")[0].text[:-1].replace(",", ""))
         try:
-            self.status = False if soup.select(".state_3")[0].select(
-                ".state_body")[0].text == u"終了" else True
+            self.asset = int(soup.select(".leftTable")[0].select(
+                ".downRow")[2].select(".alR")[0].text[:-1].replace(",", ""))
+            self.status = True if soup.select(".state_1")[0].select(
+                ".stock_market_title")[0].text == u"現在の東証市場" else False
         except IndexError:
             self.status = False
 
