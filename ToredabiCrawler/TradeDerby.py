@@ -202,7 +202,7 @@ class TradeDerby(object):
         unit = int(soup.select(".boxb")[0].find(id="hd_stock").text)
         minimumPrice = int(soup.select(".entxt_r")[0].find(id="b_price").text.replace(",", ""))
         maximumPrice = int(soup.select(".entxt_r")[1].find(id="power").text.replace(",", ""))
-        purchase = unit * int(maximum / minimumPrice))
+        purchase = unit * int(maximum / minimumPrice)
         if 0 < purchase:
             self.driver.find_element_by_id("order_com1_volume").send_keys(str(purchase))
 
