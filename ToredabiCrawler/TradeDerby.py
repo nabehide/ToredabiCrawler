@@ -15,6 +15,7 @@ from ToredabiCrawler.parameter import (
 
 
 class TradeDerby(object):
+
     def __init__(self, account, config):
         self.username = account["username"]
         self.password = account["password"]
@@ -188,7 +189,7 @@ class TradeDerby(object):
             print(message)
         return message
 
-    def _buy(self, name, url):
+    def _buy(self, name, url, maximum=self.asset):
         self.driver.get(url)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -196,10 +197,21 @@ class TradeDerby(object):
         url = mainURL + tag.get("href")
 
         self.driver.get(url)
-        self.driver.find_element_by_class_name("transition").click()
-        self.driver.find_elements_by_class_name("transition")[1].click()
+        text = self.driver.page_source
+        soup = BeautifulSoup(text, "html.parser")
+        unit = int(soup.select(".boxb")[0].find(id="hd_stock").text)
+        minimumPrice = int(soup.select(".entxt_r")[0].find(id="b_price").text.replace(",", ""))
+        maximumPrice = int(soup.select(".entxt_r")[1].find(id="power").text.replace(",", ""))
+        purchase = unit * int(maximum / minimumPrice))
+        if 0 < purchase:
+            self.driver.find_element_by_id("order_com1_volume").send_keys(str(purchase))
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy: " + name
+            self.driver.find_element_by_class_name("transition").click()
+            self.driver.find_elements_by_class_name("transition")[1].click()
+
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy: " + name
+        else:
+            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail buy: " + name + " not have enough money"
         if self.debug:
             print(message)
         return message
@@ -230,7 +242,7 @@ class TradeDerby(object):
                 print(message)
             return message
         else:
-            self._buy(suggested[0], suggested[1])
+            self._buy(suggested[0], suggested[1], self.asset * 0.05)
 
         message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy suggested stock"
         if self.debug:

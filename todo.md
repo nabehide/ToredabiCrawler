@@ -1,6 +1,4 @@
 - split ToredabiCrawler/TradeDerby.py into buy and sell or something
-- buy a stock when there is enough money
-- change stock amount when buying
 - check Python version dependency
 - register pip
 - test
