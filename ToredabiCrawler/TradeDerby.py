@@ -100,10 +100,15 @@ class TradeDerby(object):
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
         try:
+            self.status = False
             self.asset = int(soup.select(".leftTable")[0].select(
                 ".downRow")[2].select(".alR")[0].text[:-1].replace(",", ""))
-            self.status = True if soup.select(".state_1")[0].select(
-                ".stock_market_title")[0].text == u"現在の東証市場" else False
+            if 0 < len(soup.select(".state_1")):
+                self.status = True if soup.select(".state_1")[0].select(
+                    ".stock_market_title")[0].text == u"現在の東証市場" else False
+            if 0 < len(soup.select(".state_2")) and not self.status:
+                self.status = True if soup.select(".state_2")[0].select(
+                    ".stock_market_title")[0].text == u"現在の東証市場" else False
         except IndexError:
             self.status = False
 
