@@ -98,6 +98,11 @@ class TradeDerby(object):
     def getStatus(self):
         self.driver.get(mainURL + dashboardsPath)
         text = self.driver.page_source
+        import csv
+        f = open("log/" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S_") + "status.csv", "w")
+        writer = csv.writer(f)
+        writer.writerow("".join(text))
+        f.close()
         soup = BeautifulSoup(text, "html.parser")
         try:
             self.status = False
@@ -194,7 +199,7 @@ class TradeDerby(object):
             print(message)
         return message
 
-    def _buy(self, name, url, maximum=self.asset):
+    def _buy(self, name, url, maximum):
         self.driver.get(url)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
@@ -204,7 +209,7 @@ class TradeDerby(object):
         self.driver.get(url)
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
-        unit = int(soup.select(".boxb")[0].find(id="hd_stock").text)
+        unit = int(soup.select(".boxb")[0].find(id="hd_stock").text.replace(",", ""))
         minimumPrice = int(soup.select(".entxt_r")[0].find(id="b_price").text.replace(",", ""))
         maximumPrice = int(soup.select(".entxt_r")[1].find(id="power").text.replace(",", ""))
         purchase = unit * int(maximum / minimumPrice)
