@@ -1,7 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Maintainability](https://api.codeclimate.com/v1/badges/bcca31b9a77a97f213d9/maintainability)](https://codeclimate.com/github/nabehide/toredabiCrawler/maintainability)
+[![Maintainability](https://api.codeclimate.com/v1/badges/bcca31b9a77a97f213d9/maintainability)](https://codeclimate.com/github/nabehide/TradeDerPy/maintainability)
 
-# ToredabiCrawler
+# TradeDerPy
 Crawl in TradeDerby using (Headless) Chrome.
 
 ## How to use
@@ -22,4 +22,4 @@ password = "YOUR_PASSWORD"
 ```
 
 ### Crawl in TradeDerby
-- Please refer to "example_TradeDerby.py".
+- Please refer to "example_TradeDerPy.py".

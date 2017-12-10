@@ -8,19 +8,24 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from ToredabiCrawler.parameter import (
+from TradeDerPy.parameter import (
     mainURL, loginPath, suggestPath, PositionHoldPath, orderPath,
     dashboardsPath,
 )
 
 
-class TradeDerby(object):
+def timeStamp(self):
+    return datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ")
+
+
+class TradeDerPy(object):
 
     def __init__(self, account, config):
         self.username = account["username"]
         self.password = account["password"]
         self.debug = config["debug"]
         self.headless = config["headless"]
+        self.driverPath = config["driverPath"]
 
         self.columnsHold = [
             "name", "URL", "rateDay", "rateHold", "sellURL", "quantity",
@@ -35,16 +40,16 @@ class TradeDerby(object):
         if self.headless:
             self.options.add_argument("--headless")
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success init"
+        message = timeStamp + "Success init"
         if self.debug:
             print(message)
 
     def open(self):
         self.driver = webdriver.Chrome(
-            "./chromedriver", chrome_options=self.options)
+            self.driverPath, chrome_options=self.options)
         self.driver.get(mainURL)
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success open"
+        message = timeStamp + "Success open"
         if self.debug:
             print(message)
         return message
@@ -56,54 +61,70 @@ class TradeDerby(object):
         self.driver.find_element_by_name("password").send_keys(self.password)
         self.driver.find_element_by_id("login_button").click()
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success login"
+        message = timeStamp + "Success login"
         if self.debug:
             print(message)
         return message
 
-    def _getSuggestedURL(self):
-        self.driver.get(mainURL + suggestPath)
-        text = self.driver.page_source
-        soup = BeautifulSoup(text, "html.parser")
-        stock = {}
-        for tag in soup.select(".alC"):
-            tagQuote = tag.find(href=re.compile("/td/quotes/"))
-            try:
-                stockName = tagQuote.text
-                url = mainURL + tagQuote.get("href")
-                stock[stockName] = url
-            except (TypeError, AttributeError):
-                pass
+    def buy(self, name, url, maximum):
+        self.driver.get(url)
+        soup, text = self._getSoupText()
+        tag = soup.select(".accordionWrapper1")[0].select(".orderHover1")[0]
+        url = mainURL + tag.get("href")
 
-        key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
-        extractedKey = []
-        for i in key:
-            flag = True
-            for j in list(self.orderURL):
-                if i in j:
-                    flag = False
-                    break
-            for j in list(self.hold["name"]):
-                if flag and i in j:
-                    flag = False
-                    break
-            if flag:
-                extractedKey.append(i)
-        if len(extractedKey) == 0:
-            return False
+        self.driver.get(url)
+        soup, text = self._getSoupText()
+        unit = int(soup.select(".boxb")[0].find(
+                   id="hd_stock").text.replace(",", ""))
+        minimumPrice = int(soup.select(".entxt_r")[0].find(
+                           id="b_price").text.replace(",", ""))
+        # maximumPrice = int(soup.select(".entxt_r")[1].find(
+        #                    id="power").text.replace(",", ""))
+        purchase = unit * int(maximum / minimumPrice)
+        if 0 < purchase:
+            self.driver.find_element_by_id(
+                "order_com1_volume").send_keys(str(purchase))
+
+            self.driver.find_element_by_class_name("transition").click()
+            self.driver.find_elements_by_class_name("transition")[1].click()
+
+            message = timeStamp + "Success buy: " + name
         else:
-            url = stock[extractedKey[0]]
-            return extractedKey[0], url
+            message = (timeStamp + "Fail buy: " +
+                       name + " not have enough money")
+        if self.debug:
+            print(message)
+        return message
+
+    def sell(self, name, url):
+        self.driver.get(url)
+        self.driver.find_element_by_class_name("transition").click()
+        self.driver.find_elements_by_class_name("transition")[1].click()
+
+        message = timeStamp + "Success sell: " + name
+        if self.debug:
+            print(message)
+        return message
+
+    def close(self):
+        self.driver.quit()
+
+        message = timeStamp + "Success close"
+        if self.debug:
+            print(message)
+        return message
 
     def getStatus(self):
         self.driver.get(mainURL + dashboardsPath)
-        text = self.driver.page_source
+        soup, text = self._getSoupText()
         import csv
-        f = open("log/" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S_") + "status.csv", "w")
+        f = open(
+            ("log/" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S_") +
+             "status.csv"),
+            "w")
         writer = csv.writer(f)
         writer.writerow("".join(text))
         f.close()
-        soup = BeautifulSoup(text, "html.parser")
         try:
             self.status = False
             self.asset = int(soup.select(".leftTable")[0].select(
@@ -117,7 +138,7 @@ class TradeDerby(object):
         except IndexError:
             self.status = False
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success get status"
+        message = timeStamp + "Success get status"
         if self.debug:
             print(message)
         return message
@@ -126,20 +147,38 @@ class TradeDerby(object):
         print("asset :", self.asset)
         print("status:", self.status)
 
+    def getOrder(self):
+        self.orderURL = {}
+
+        self.driver.get(mainURL + orderPath)
+        soup, text = self._getSoupText()
+        for tag in soup.select(".stockData"):
+            try:
+                tagsCandidate = tag.select(".alC")
+                tagCandidate = tagsCandidate[len(tagsCandidate) - 1].find(
+                    href=re.compile("/td/orders"))
+                if "edit" in tagCandidate.get("href"):
+                    tagQuote = tag.find(href=re.compile("/td/quotes"))
+                    stockName = tagQuote.text
+                    url = mainURL + tagQuote.get("href")
+                    self.orderURL[stockName] = url
+            except (TypeError, AttributeError, IndexError):
+                pass
+
+        message = timeStamp + "Success update order"
+        if self.debug:
+            print(message)
+        return message
+
     def showOrder(self):
         for i in range(len(self.orderURL)):
             print(list(self.orderURL.keys())[i])
 
-    def showPositionHold(self):
-        columnsShow = [i for i in self.columnsHold if "URL" not in i]
-        print(self.hold[columnsShow])
-
-    def updatePositionHold(self):
+    def getHold(self):
         self.hold = pd.DataFrame(columns=self.columnsHold)
 
         self.driver.get(mainURL + PositionHoldPath)
-        text = self.driver.page_source
-        soup = BeautifulSoup(text, "html.parser")
+        soup, text = self._getSoupText()
         for tag in soup.select(".stockData"):
             try:
                 tagQuote = tag.find(href=re.compile("/td/quotes"))
@@ -170,91 +209,59 @@ class TradeDerby(object):
             except IndexError:
                 pass
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success updatePositionHold"
+        message = timeStamp + "Success updatePositionHold"
         if self.debug:
             print(message)
         return message
 
-    def updateOrder(self):
-        self.orderURL = {}
+    def showHold(self):
+        columnsShow = [i for i in self.columnsHold if "URL" not in i]
+        print(self.hold[columnsShow])
 
-        self.driver.get(mainURL + orderPath)
-        text = self.driver.page_source
-        soup = BeautifulSoup(text, "html.parser")
-        for tag in soup.select(".stockData"):
+    def _getSuggestedURL(self):
+        self.driver.get(mainURL + suggestPath)
+        soup, text = self._getSoupText()
+        stock = {}
+        for tag in soup.select(".alC"):
+            tagQuote = tag.find(href=re.compile("/td/quotes/"))
             try:
-                tagsCandidate = tag.select(".alC")
-                tagCandidate = tagsCandidate[len(tagsCandidate) - 1].find(
-                    href=re.compile("/td/orders"))
-                if "edit" in tagCandidate.get("href"):
-                    tagQuote = tag.find(href=re.compile("/td/quotes"))
-                    stockName = tagQuote.text
-                    url = mainURL + tagQuote.get("href")
-                    self.orderURL[stockName] = url
-            except (TypeError, AttributeError, IndexError):
+                stockName = tagQuote.text
+                url = mainURL + tagQuote.get("href")
+                stock[stockName] = url
+            except (TypeError, AttributeError):
                 pass
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success update order"
-        if self.debug:
-            print(message)
-        return message
-
-    def _buy(self, name, url, maximum):
-        self.driver.get(url)
-        text = self.driver.page_source
-        soup = BeautifulSoup(text, "html.parser")
-        tag = soup.select(".accordionWrapper1")[0].select(".orderHover1")[0]
-        url = mainURL + tag.get("href")
-
-        self.driver.get(url)
-        text = self.driver.page_source
-        soup = BeautifulSoup(text, "html.parser")
-        unit = int(soup.select(".boxb")[0].find(id="hd_stock").text.replace(",", ""))
-        minimumPrice = int(soup.select(".entxt_r")[0].find(id="b_price").text.replace(",", ""))
-        maximumPrice = int(soup.select(".entxt_r")[1].find(id="power").text.replace(",", ""))
-        purchase = unit * int(maximum / minimumPrice)
-        if 0 < purchase:
-            self.driver.find_element_by_id("order_com1_volume").send_keys(str(purchase))
-
-            self.driver.find_element_by_class_name("transition").click()
-            self.driver.find_elements_by_class_name("transition")[1].click()
-
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy: " + name
+        key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
+        extractedKey = []
+        for i in key:
+            flag = True
+            for j in list(self.orderURL):
+                if i in j:
+                    flag = False
+                    break
+            for j in list(self.hold["name"]):
+                if flag and i in j:
+                    flag = False
+                    break
+            if flag:
+                extractedKey.append(i)
+        if len(extractedKey) == 0:
+            return False
         else:
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail buy: " + name + " not have enough money"
-        if self.debug:
-            print(message)
-        return message
-
-    def _sell(self, name, url):
-        self.driver.get(url)
-        self.driver.find_element_by_class_name("transition").click()
-        self.driver.find_elements_by_class_name("transition")[1].click()
-
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell: " + name
-        if self.debug:
-            print(message)
-        return message
-
-    def close(self):
-        self.driver.quit()
-
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success close"
-        if self.debug:
-            print(message)
-        return message
+            url = stock[extractedKey[0]]
+            return extractedKey[0], url
 
     def buySuggestedStock(self):
         suggested = self._getSuggestedURL()
         if suggested is False:
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail buy suggested stock: Not found"
+            message = timeStamp + "Fail buy suggested stock: Not found"
             if self.debug:
                 print(message)
             return message
         else:
-            self._buy(suggested[0], suggested[1], self.asset * 0.05)
+            self.buy(suggested[0], suggested[1], self.asset * 0.05)
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success buy suggested stock"
+        message = timeStamp + "Success buy suggested stock"
         if self.debug:
             print(message)
         return message
@@ -267,9 +274,9 @@ class TradeDerby(object):
         idx = random.randint(0, len(self.hold))
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
-        self._sell(name, url)
+        self.sell(name, url)
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell random"
+        message = timeStamp + "Success sell random"
         if self.debug:
             print(message)
         return message
@@ -279,11 +286,11 @@ class TradeDerby(object):
         for i in range(len(candidate)):
             name = candidate.iloc[i].loc["name"]
             url = candidate.iloc[i].loc["sellURL"]
-            self._sell(name, url)
+            self.sell(name, url)
 
         self.hold = self.hold[0 < self.hold["star"]]
 
-        message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell cut loss"
+        message = timeStamp + "Success sell cut loss"
         if self.debug:
             print(message)
         return message
@@ -293,7 +300,7 @@ class TradeDerby(object):
             (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
         ]
         if len(candidate) == 0:
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail sell profirable: No candidate"
+            message = timeStamp + "Fail sell profirable: No candidate"
             if self.debug:
                 print(message)
             return message
@@ -301,11 +308,11 @@ class TradeDerby(object):
             for i in range(len(candidate)):
                 name = candidate.iloc[i].loc["name"]
                 url = candidate.iloc[i].loc["sellURL"]
-                self._sell(name, url)
+                self.sell(name, url)
 
             self.hold = self.hold[0 < self.hold["star"]]
 
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success sell cut loss"
+            message = timeStamp + "Success sell cut loss"
             if self.debug:
                 print(message)
             return message
@@ -320,12 +327,17 @@ class TradeDerby(object):
             ret += self.sellProfitable() + "\n"
             ret += self.sellCutLoss() + "\n"
 
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Success routine"
+            message = timeStamp + "Success routine"
             if self.debug:
                 print(message)
             return ret + message
         else:
-            message = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + "Fail routine: Closed"
+            message = timeStamp + "Fail routine: Closed"
             if self.debug:
                 print(message)
             return message
+
+    def _getSoupText(self):
+        text = self.driver.page_source
+        soup = BeautifulSoup(text, "html.parser")
+        return text, soup
