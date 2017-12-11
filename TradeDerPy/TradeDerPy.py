@@ -14,7 +14,7 @@ from TradeDerPy.parameter import (
 )
 
 
-def timeStamp(self):
+def timeStamp():
     return datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ")
 
 
@@ -32,15 +32,20 @@ class TradeDerPy(object):
             "star", "safety", "unitPrice",
         ]
         self.hold = pd.DataFrame(columns=self.columnsHold)
+        self.columnsSuggested = [
+            "name", "URL",
+        ]
+        self.suggested = pd.DataFrame(columns=self.columnsSuggested)
         self.orderURL = {}
         self.asset = 0
+        self.power = 0
         self.status = False
 
         self.options = Options()
         if self.headless:
             self.options.add_argument("--headless")
 
-        message = timeStamp + "Success init"
+        message = timeStamp() + "Success init"
         if self.debug:
             print(message)
 
@@ -49,7 +54,7 @@ class TradeDerPy(object):
             self.driverPath, chrome_options=self.options)
         self.driver.get(mainURL)
 
-        message = timeStamp + "Success open"
+        message = timeStamp() + "Success open"
         if self.debug:
             print(message)
         return message
@@ -61,13 +66,13 @@ class TradeDerPy(object):
         self.driver.find_element_by_name("password").send_keys(self.password)
         self.driver.find_element_by_id("login_button").click()
 
-        message = timeStamp + "Success login"
+        message = timeStamp() + "Success login"
         if self.debug:
             print(message)
         return message
 
-    def buy(self, name, url, maximum):
-        self.driver.get(url)
+    def buy(self, name, maximum):
+        self.driver.get(mainURL + "/td/quotes/" + name + "T")
         soup, text = self._getSoupText()
         tag = soup.select(".accordionWrapper1")[0].select(".orderHover1")[0]
         url = mainURL + tag.get("href")
@@ -80,7 +85,10 @@ class TradeDerPy(object):
                            id="b_price").text.replace(",", ""))
         # maximumPrice = int(soup.select(".entxt_r")[1].find(
         #                    id="power").text.replace(",", ""))
-        purchase = unit * int(maximum / minimumPrice)
+        if 0 < minimumPrice:
+            purchase = unit * int(maximum / minimumPrice)
+        else:
+            purchase = 0
         if 0 < purchase:
             self.driver.find_element_by_id(
                 "order_com1_volume").send_keys(str(purchase))
@@ -88,20 +96,25 @@ class TradeDerPy(object):
             self.driver.find_element_by_class_name("transition").click()
             self.driver.find_elements_by_class_name("transition")[1].click()
 
-            message = timeStamp + "Success buy: " + name
+            message = timeStamp() + "Success buy: " + name
         else:
-            message = (timeStamp + "Fail buy: " +
+            message = (timeStamp() + "Fail buy: " +
                        name + " not have enough money")
         if self.debug:
             print(message)
         return message
 
-    def sell(self, name, url):
+    def sell(self, name, url, quantity):
         self.driver.get(url)
+        self.driver.find_element_by_id(
+            "order_com1_volume").send_keys(str(quantity))
+        # soup, text = self._getSoupText()
+        # maximum = soup.select(
+        #     ".enkotei")[1].select(".entxt_r")[0].text.replace(",", "")
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
 
-        message = timeStamp + "Success sell: " + name
+        message = timeStamp() + "Success sell: " + name
         if self.debug:
             print(message)
         return message
@@ -109,7 +122,7 @@ class TradeDerPy(object):
     def close(self):
         self.driver.quit()
 
-        message = timeStamp + "Success close"
+        message = timeStamp() + "Success close"
         if self.debug:
             print(message)
         return message
@@ -128,6 +141,8 @@ class TradeDerPy(object):
         try:
             self.status = False
             self.asset = int(soup.select(".leftTable")[0].select(
+                ".downRow")[0].select(".alR")[0].text[:-1].replace(",", ""))
+            self.power = int(soup.select(".leftTable")[0].select(
                 ".downRow")[2].select(".alR")[0].text[:-1].replace(",", ""))
             if 0 < len(soup.select(".state_1")):
                 self.status = True if soup.select(".state_1")[0].select(
@@ -138,13 +153,14 @@ class TradeDerPy(object):
         except IndexError:
             self.status = False
 
-        message = timeStamp + "Success get status"
+        message = timeStamp() + "Success get status"
         if self.debug:
             print(message)
         return message
 
     def showStatus(self):
         print("asset :", self.asset)
+        print("power :", self.power)
         print("status:", self.status)
 
     def getOrder(self):
@@ -165,7 +181,7 @@ class TradeDerPy(object):
             except (TypeError, AttributeError, IndexError):
                 pass
 
-        message = timeStamp + "Success update order"
+        message = timeStamp() + "Success get order"
         if self.debug:
             print(message)
         return message
@@ -209,7 +225,7 @@ class TradeDerPy(object):
             except IndexError:
                 pass
 
-        message = timeStamp + "Success updatePositionHold"
+        message = timeStamp() + "Success get Hold"
         if self.debug:
             print(message)
         return message
@@ -218,7 +234,9 @@ class TradeDerPy(object):
         columnsShow = [i for i in self.columnsHold if "URL" not in i]
         print(self.hold[columnsShow])
 
-    def _getSuggestedURL(self):
+    def getSuggested(self):
+        self.suggested = pd.DataFrame(columns=self.columnsSuggested)
+
         self.driver.get(mainURL + suggestPath)
         soup, text = self._getSoupText()
         stock = {}
@@ -245,23 +263,36 @@ class TradeDerPy(object):
                     break
             if flag:
                 extractedKey.append(i)
-        if len(extractedKey) == 0:
-            return False
-        else:
-            url = stock[extractedKey[0]]
-            return extractedKey[0], url
+        for i in extractedKey:
+            self.suggested = self.suggested.append(
+                pd.DataFrame([[i, stock[i]]], columns=self.columnsSuggested),
+                ignore_index=True,
+            )
+
+        message = timeStamp() + "Success get suggested"
+        if self.debug:
+            print(message)
+        return message
+
+    def showSuggested(self):
+        print(self.suggested)
 
     def buySuggestedStock(self):
-        suggested = self._getSuggestedURL()
-        if suggested is False:
-            message = timeStamp + "Fail buy suggested stock: Not found"
+        if len(self.suggested) == 0:
+            message = timeStamp() + "Fail buy suggested stock: Not found"
             if self.debug:
                 print(message)
             return message
         else:
-            self.buy(suggested[0], suggested[1], self.asset * 0.05)
+            # idx = random.randint(0, len(self.suggested) - 1)
+            for idx in range(self.suggested):
+                ret = self.buy(
+                    self.suggested["name"][idx], self.asset * 0.05,
+                )
+                if "Fail" in ret:
+                    break
 
-        message = timeStamp + "Success buy suggested stock"
+        message = timeStamp() + "Success buy suggested stock"
         if self.debug:
             print(message)
         return message
@@ -271,12 +302,13 @@ class TradeDerPy(object):
             print("There is no stock")
             return False
 
-        idx = random.randint(0, len(self.hold))
+        idx = random.randint(0, len(self.hold) - 1)
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
-        self.sell(name, url)
+        quantity = self.hold["quantity"].iloc[idx]
+        self.sell(name, url, quantity)
 
-        message = timeStamp + "Success sell random"
+        message = timeStamp() + "Success sell random"
         if self.debug:
             print(message)
         return message
@@ -286,11 +318,12 @@ class TradeDerPy(object):
         for i in range(len(candidate)):
             name = candidate.iloc[i].loc["name"]
             url = candidate.iloc[i].loc["sellURL"]
-            self.sell(name, url)
+            quantity = candidate.iloc[i].loc["quantity"]
+            self.sell(name, url, quantity)
 
         self.hold = self.hold[0 < self.hold["star"]]
 
-        message = timeStamp + "Success sell cut loss"
+        message = timeStamp() + "Success sell cut loss"
         if self.debug:
             print(message)
         return message
@@ -300,7 +333,7 @@ class TradeDerPy(object):
             (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
         ]
         if len(candidate) == 0:
-            message = timeStamp + "Fail sell profirable: No candidate"
+            message = timeStamp() + "Fail sell profirable: No candidate"
             if self.debug:
                 print(message)
             return message
@@ -308,11 +341,12 @@ class TradeDerPy(object):
             for i in range(len(candidate)):
                 name = candidate.iloc[i].loc["name"]
                 url = candidate.iloc[i].loc["sellURL"]
-                self.sell(name, url)
+                quantity = candidate.iloc[i].loc["quantity"]
+                self.sell(name, url, quantity)
 
             self.hold = self.hold[0 < self.hold["star"]]
 
-            message = timeStamp + "Success sell cut loss"
+            message = timeStamp() + "Success sell cut loss"
             if self.debug:
                 print(message)
             return message
@@ -321,18 +355,19 @@ class TradeDerPy(object):
         self.getStatus()
         if self.status:
             ret = ""
-            ret += self.updatePositionHold() + "\n"
-            ret += self.updateOrder() + "\n"
+            ret += self.getHold() + "\n"
+            ret += self.getOrder() + "\n"
+            ret += self.getSuggested() + "\n"
             ret += self.buySuggestedStock() + "\n"
             ret += self.sellProfitable() + "\n"
             ret += self.sellCutLoss() + "\n"
 
-            message = timeStamp + "Success routine"
+            message = timeStamp() + "Success routine"
             if self.debug:
                 print(message)
             return ret + message
         else:
-            message = timeStamp + "Fail routine: Closed"
+            message = timeStamp() + "Fail routine: Closed"
             if self.debug:
                 print(message)
             return message
@@ -340,4 +375,4 @@ class TradeDerPy(object):
     def _getSoupText(self):
         text = self.driver.page_source
         soup = BeautifulSoup(text, "html.parser")
-        return text, soup
+        return soup, text
