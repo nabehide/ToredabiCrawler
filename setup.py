@@ -4,7 +4,7 @@ from distutils.core import setup
 setup(
     name='TradeDerPy',
     packages=["TradeDerPy"],
-    version='0.0.0',
+    version='0.0.1',
     description='Crawl into TradeDerby',
     author='nabehide',
     author_email='temp@temp.com',

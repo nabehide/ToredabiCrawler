@@ -30,7 +30,9 @@ td.showSuggested()
 # buy
 td.getSuggested()
 if len(td.suggested) != 0:
-    td.buy(td.suggested["name"][0], maximum=1000000)
+    name = td.suggested["name"][0]
+    maximum = 1000000
+    td.buy(name, maximum)
 
 # sell
 td.getHold()

@@ -18,9 +18,10 @@ $ pip install TradeDerPy
 
 - git cloneなどでモジュールをインストールしてください。
 ```
-git clone https://github.com/nabehide/TradeDerPy.git
-cd TradeDerPy
-python setup.py install
+$ git clone https://github.com/nabehide/TradeDerPy.git
+$ cd TradeDerPy
+$ pip install -r requirements.txt
+$ python setup.py install
 ```
 
 ## 使い方
@@ -93,4 +94,4 @@ td.close()
 ```
 
 ### Examples
-- [リポジトリのexamples](https://github.com/nabehide/TradeDerPy/examples)に簡単なコードがあるので、こちらも参考にしてください。
+- [リポジトリのexamples](https://github.com/nabehide/TradeDerPy/tree/master/examples)に簡単なコードがあるので、こちらも参考にしてください。

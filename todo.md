@@ -1,4 +1,3 @@
 - split ToredabiCrawler/TradeDerby.py into buy and sell or something
 - check Python version dependency
-- register pip
 - test
