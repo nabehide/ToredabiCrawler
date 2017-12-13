@@ -130,14 +130,6 @@ class TradeDerPy(object):
     def getStatus(self):
         self.driver.get(mainURL + dashboardsPath)
         soup, text = self._getSoupText()
-        import csv
-        f = open(
-            ("log/" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S_") +
-             "status.csv"),
-            "w")
-        writer = csv.writer(f)
-        writer.writerow("".join(text))
-        f.close()
         try:
             self.status = False
             self.asset = int(soup.select(".leftTable")[0].select(
@@ -285,7 +277,7 @@ class TradeDerPy(object):
             return message
         else:
             # idx = random.randint(0, len(self.suggested) - 1)
-            for idx in range(self.suggested):
+            for idx in range(len(self.suggested)):
                 ret = self.buy(
                     self.suggested["name"][idx], self.asset * 0.05,
                 )
