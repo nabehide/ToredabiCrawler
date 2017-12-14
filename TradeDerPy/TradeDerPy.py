@@ -205,7 +205,7 @@ class TradeDerPy(object):
                         star = i
                         break
                 safety = True if len(
-                    tag.select(".omamoriSafety")[0]) != 0 else False
+                    tag.select(".omamoriSafety")) != 0 else False
                 unitPrice = tagALR[2].text
                 self.hold = self.hold.append(
                     pd.DataFrame(
