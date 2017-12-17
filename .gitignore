@@ -1,6 +1,5 @@
 private.py
-chromedriver
-chromedriver.exe
+chromedriver*
 
 build
 dist

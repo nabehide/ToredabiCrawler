@@ -277,14 +277,15 @@ class TradeDerPy(object):
             return message
         else:
             # idx = random.randint(0, len(self.suggested) - 1)
+            ret = ""
             for idx in range(len(self.suggested)):
-                ret = self.buy(
+                ret += self.buy(
                     self.suggested["name"][idx], self.asset * 0.05,
-                )
+                ) + "\n"
                 if "Fail" in ret:
                     break
 
-        message = timeStamp() + "Success buy suggested stock"
+        message = ret + timeStamp() + "Success buy suggested stock"
         if self.debug:
             print(message)
         return message
