@@ -275,15 +275,14 @@ class TradeDerPy(object):
             if self.debug:
                 print(message)
             return message
-        else:
-            # idx = random.randint(0, len(self.suggested) - 1)
-            ret = ""
-            for idx in range(len(self.suggested)):
-                ret += self.buy(
-                    self.suggested["name"][idx], self.asset * 0.05,
-                ) + "\n"
-                if "Fail" in ret:
-                    break
+
+        ret = ""
+        for idx in range(len(self.suggested)):
+            ret += self.buy(
+                self.suggested["name"][idx], self.asset * 0.05,
+            ) + "\n"
+            if "Fail" in ret:
+                break
 
         message = ret + timeStamp() + "Success buy suggested stock"
         if self.debug:
@@ -299,24 +298,25 @@ class TradeDerPy(object):
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
         quantity = self.hold["quantity"].iloc[idx]
-        self.sell(name, url, quantity)
+        ret = self.sell(name, url, quantity) + "\n"
 
-        message = timeStamp() + "Success sell random"
+        message = ret + timeStamp() + "Success sell random"
         if self.debug:
             print(message)
         return message
 
     def sellCutLoss(self):
         candidate = self.hold[self.hold["star"] <= 0]
+        ret = ""
         for i in range(len(candidate)):
             name = candidate.iloc[i].loc["name"]
             url = candidate.iloc[i].loc["sellURL"]
             quantity = candidate.iloc[i].loc["quantity"]
-            self.sell(name, url, quantity)
+            ret += self.sell(name, url, quantity) * "\n"
 
         self.hold = self.hold[0 < self.hold["star"]]
 
-        message = timeStamp() + "Success sell cut loss"
+        message = ret + timeStamp() + "Success sell cut loss"
         if self.debug:
             print(message)
         return message
@@ -331,15 +331,16 @@ class TradeDerPy(object):
                 print(message)
             return message
         else:
+            ret = ""
             for i in range(len(candidate)):
                 name = candidate.iloc[i].loc["name"]
                 url = candidate.iloc[i].loc["sellURL"]
                 quantity = candidate.iloc[i].loc["quantity"]
-                self.sell(name, url, quantity)
+                ret += self.sell(name, url, quantity) + "\n"
 
             self.hold = self.hold[0 < self.hold["star"]]
 
-            message = timeStamp() + "Success sell cut loss"
+            message = ret + timeStamp() + "Success sell cut loss"
             if self.debug:
                 print(message)
             return message
