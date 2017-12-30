@@ -282,8 +282,6 @@ class TradeDerPy(object):
                 ret += self.buy(
                     self.suggested["name"][idx], self.asset * 0.05,
                 ) + "\n"
-                if "Fail" in ret:
-                    break
 
         message = ret + timeStamp() + "Success buy suggested stock"
         if self.debug:
