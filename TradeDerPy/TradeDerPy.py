@@ -9,8 +9,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from TradeDerPy.parameter import (
-    mainURL, loginPath, suggestPath, PositionHoldPath, orderPath,
+    mainURL, loginPath, PositionHoldPath, orderPath,
     dashboardsPath,
+    defaultSearchVariables,
 )
 
 
@@ -70,6 +71,39 @@ class TradeDerPy(object):
         if self.debug:
             print(message)
         return message
+
+    def search(self, variables):
+        queryTraded = "&traded=true" if variables["traded"] else ""
+        queryCommand = "&command=" + variables["command"]
+        queryIdx1 = "&idx1=true" if variables["idx1"] else "&idx1=" if variables["idx1"] is None else "&idx1=false"
+        queryMinUnitPrice = "&lospl=" if variables["minUnitPrice"] is None else "&lospl=" + str(variables["minUnitPrice"])
+        queryMaxUnitPrice = "&losph=" if variables["maxUnitPrice"] is None else "&losph=" + str(variables["maxUnitPrice"])
+        queryMinmkcp = "&mkcpl=" if variables["minmkcp"] is None else "&mkcpl=" + str(variables["minmkcp"])
+        queryMaxmkcp = "&mkcph=" if variables["maxmkcp"] is None else "&mkcph=" + str(variables["maxmkcp"])
+        queryMinPBR = "&cpbrl=" if variables["minPBR"] is None else "&cpbrl=" + str(variables["minPBR"])
+        queryMaxPBR = "&cpbrh=" if variables["maxPBR"] is None else "&cpbrh=" + str(variables["maxPBR"])
+        queryMinPER = "&cperl=" if variables["minPER"] is None else "&cperl=" + str(variables["minPER"])
+        queryMaxPER = "&cperh=" if variables["maxPER"] is None else "&cperh=" + str(variables["maxPER"])
+        querySuggest = "" if variables["suggest"] == 0 else "&suggest=" + str(variables["suggest"])
+        querySafery = "&safety=true" if variables["safery"] else ""
+
+        searchPath = ("/td/quotes/query?query=&exch=&jsec=" + queryTraded + queryCommand + queryIdx1 +
+                      queryMinUnitPrice + queryMaxUnitPrice + queryMinmkcp + queryMaxmkcp + queryMinPBR + queryMaxPBR +
+                      queryMinPER + queryMaxPER + querySuggest + querySafery + "&sort_rank1=quote_code+asc")
+        self.driver.get(mainURL + searchPath)
+
+        soup, text = self._getSoupText()
+        stock = {}
+        for tag in soup.select(".alC"):
+            tagQuote = tag.find(href=re.compile("/td/quotes/"))
+            try:
+                stockName = tagQuote.text
+                url = mainURL + tagQuote.get("href")
+                stock[stockName] = url
+            except (TypeError, AttributeError):
+                pass
+
+        return stock
 
     def buy(self, name, maximum):
         self.driver.get(mainURL + "/td/quotes/" + name + "T")
@@ -229,17 +263,10 @@ class TradeDerPy(object):
     def getSuggested(self):
         self.suggested = pd.DataFrame(columns=self.columnsSuggested)
 
-        self.driver.get(mainURL + suggestPath)
-        soup, text = self._getSoupText()
-        stock = {}
-        for tag in soup.select(".alC"):
-            tagQuote = tag.find(href=re.compile("/td/quotes/"))
-            try:
-                stockName = tagQuote.text
-                url = mainURL + tagQuote.get("href")
-                stock[stockName] = url
-            except (TypeError, AttributeError):
-                pass
+        variables = defaultSearchVariables
+        variables["suggest"] = 2
+        variables["safety"] = True
+        stock = self.search(variables)
 
         key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
         extractedKey = []
@@ -275,13 +302,14 @@ class TradeDerPy(object):
             if self.debug:
                 print(message)
             return message
-        else:
-            # idx = random.randint(0, len(self.suggested) - 1)
-            ret = ""
-            for idx in range(len(self.suggested)):
-                ret += self.buy(
-                    self.suggested["name"][idx], self.asset * 0.05,
-                ) + "\n"
+
+        ret = ""
+        for idx in range(len(self.suggested)):
+            ret += self.buy(
+                self.suggested["name"][idx], self.asset * 0.05,
+            ) + "\n"
+            if "Fail" in ret:
+                break
 
         message = ret + timeStamp() + "Success buy suggested stock"
         if self.debug:
@@ -297,24 +325,25 @@ class TradeDerPy(object):
         name = self.hold["name"].iloc[idx]
         url = self.hold["sellURL"].iloc[idx]
         quantity = self.hold["quantity"].iloc[idx]
-        self.sell(name, url, quantity)
+        ret = self.sell(name, url, quantity) + "\n"
 
-        message = timeStamp() + "Success sell random"
+        message = ret + timeStamp() + "Success sell random"
         if self.debug:
             print(message)
         return message
 
     def sellCutLoss(self):
         candidate = self.hold[self.hold["star"] <= 0]
+        ret = ""
         for i in range(len(candidate)):
             name = candidate.iloc[i].loc["name"]
             url = candidate.iloc[i].loc["sellURL"]
             quantity = candidate.iloc[i].loc["quantity"]
-            self.sell(name, url, quantity)
+            ret += self.sell(name, url, quantity) * "\n"
 
         self.hold = self.hold[0 < self.hold["star"]]
 
-        message = timeStamp() + "Success sell cut loss"
+        message = ret + timeStamp() + "Success sell cut loss"
         if self.debug:
             print(message)
         return message
@@ -329,15 +358,16 @@ class TradeDerPy(object):
                 print(message)
             return message
         else:
+            ret = ""
             for i in range(len(candidate)):
                 name = candidate.iloc[i].loc["name"]
                 url = candidate.iloc[i].loc["sellURL"]
                 quantity = candidate.iloc[i].loc["quantity"]
-                self.sell(name, url, quantity)
+                ret += self.sell(name, url, quantity) + "\n"
 
             self.hold = self.hold[0 < self.hold["star"]]
 
-            message = timeStamp() + "Success sell cut loss"
+            message = ret + timeStamp() + "Success sell cut loss"
             if self.debug:
                 print(message)
             return message

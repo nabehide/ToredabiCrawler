@@ -1,16 +1,6 @@
 from TradeDerPy.TradeDerPy import TradeDerPy
-from private import username, password
+from config import account, config
 
-
-account = {
-    "username": username,
-    "password": password,
-}
-config = {
-    "headless": False,
-    "debug": True,
-    "driverPath": "./chromedriver",
-}
 
 # login
 td = TradeDerPy(account, config)

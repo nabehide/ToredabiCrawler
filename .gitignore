@@ -1,4 +1,4 @@
-private.py
+config.py
 chromedriver*
 
 build
@@ -6,4 +6,5 @@ dist
 __pycache__
 *egg-info*
 *~
+*checkpoints*
 .coverage

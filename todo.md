@@ -1,4 +1,3 @@
 - split ToredabiCrawler/TradeDerby.py into buy and sell or something
-- search stock
 - check Python version dependency
 - test
