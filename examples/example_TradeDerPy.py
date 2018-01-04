@@ -1,4 +1,4 @@
-from TradeDerPy.TradeDerPy import TradeDerPy
+from TradeDerPy import TradeDerPy
 from config import account, config
 
 
