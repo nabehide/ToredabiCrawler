@@ -123,6 +123,11 @@ class TradeDerPy(object):
             purchase = unit * int(maximum / minimumPrice)
         else:
             purchase = 0
+        print("name", name)
+        print("unit", unit)
+        print("minimumPrice", minimumPrice)
+        print("maximum", maximum)
+        print("purchase", purchase)
         if 0 < purchase:
             self.driver.find_element_by_id(
                 "order_com1_volume").send_keys(str(purchase))
@@ -142,9 +147,6 @@ class TradeDerPy(object):
         self.driver.get(url)
         self.driver.find_element_by_id(
             "order_com1_volume").send_keys(str(quantity))
-        # soup, text = self._getSoupText()
-        # maximum = soup.select(
-        #     ".enkotei")[1].select(".entxt_r")[0].text.replace(",", "")
         self.driver.find_element_by_class_name("transition").click()
         self.driver.find_elements_by_class_name("transition")[1].click()
 
@@ -308,8 +310,8 @@ class TradeDerPy(object):
             ret += self.buy(
                 self.suggested["name"][idx], self.asset * 0.05,
             ) + "\n"
-            if "Fail" in ret:
-                break
+            # if "Fail" in ret:
+            #     break
 
         message = ret + timeStamp() + "Success buy suggested stock"
         if self.debug:
@@ -334,23 +336,31 @@ class TradeDerPy(object):
 
     def sellCutLoss(self):
         candidate = self.hold[self.hold["star"] <= 0]
-        ret = ""
-        for i in range(len(candidate)):
-            name = candidate.iloc[i].loc["name"]
-            url = candidate.iloc[i].loc["sellURL"]
-            quantity = candidate.iloc[i].loc["quantity"]
-            ret += self.sell(name, url, quantity) * "\n"
 
-        self.hold = self.hold[0 < self.hold["star"]]
+        if len(candidate) == 0:
+            message = timeStamp() + "Fail sell CutLoss: No candidate"
+            if self.debug:
+                print(message)
+            return message
+        else:
+            ret = ""
+            for i in range(len(candidate)):
+                name = candidate.iloc[i].loc["name"]
+                url = candidate.iloc[i].loc["sellURL"]
+                quantity = candidate.iloc[i].loc["quantity"]
+                ret += self.sell(name, url, quantity) + "\n"
 
-        message = ret + timeStamp() + "Success sell cut loss"
-        if self.debug:
-            print(message)
-        return message
+            self.hold = self.hold[0 < self.hold["star"]]
+
+            message = ret + timeStamp() + "Success sell cut loss"
+            if self.debug:
+                print(message)
+            return message
 
     def sellProfitable(self):
         candidate = self.hold[
-            (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
+            # (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
+            (self.hold["star"] <= 1) & (10 < self.hold["rateHold"])
         ]
         if len(candidate) == 0:
             message = timeStamp() + "Fail sell profirable: No candidate"
