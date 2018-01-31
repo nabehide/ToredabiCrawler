@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
+import selenium.common.exceptions as EC
 from selenium.webdriver.chrome.options import Options
 
 from TradeDerPy.parameter import (
@@ -383,25 +384,28 @@ class TradeDerPy(object):
             return message
 
     def toredabiRoutine(self):
-        self.getStatus()
-        if self.status:
-            ret = ""
-            ret += self.getHold() + "\n"
-            ret += self.getOrder() + "\n"
-            ret += self.getSuggested() + "\n"
-            ret += self.buySuggestedStock() + "\n"
-            ret += self.sellProfitable() + "\n"
-            ret += self.sellCutLoss() + "\n"
+        try:
+            self.getStatus()
+            if self.status:
+                ret = ""
+                ret += self.getHold() + "\n"
+                ret += self.getOrder() + "\n"
+                ret += self.getSuggested() + "\n"
+                ret += self.buySuggestedStock() + "\n"
+                ret += self.sellProfitable() + "\n"
+                ret += self.sellCutLoss() + "\n"
 
-            message = timeStamp() + "Success routine"
-            if self.debug:
-                print(message)
-            return ret + message
-        else:
-            message = timeStamp() + "Fail routine: Closed"
-            if self.debug:
-                print(message)
-            return message
+                message = timeStamp() + "Success routine"
+                if self.debug:
+                    print(message)
+                return ret + message
+            else:
+                message = timeStamp() + "Fail routine: Closed"
+                if self.debug:
+                    print(message)
+                return message
+        except EC.TimeoutException as e:
+                return e
 
     def _getSoupText(self):
         text = self.driver.page_source
