@@ -383,7 +383,7 @@ class TradeDerPy(object):
                 print(message)
             return message
 
-    def toredabiRoutine(self):
+    def routineDay(self):
         try:
             self.getStatus()
             if self.status:
