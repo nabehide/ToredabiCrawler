@@ -268,7 +268,9 @@ class TradeDerPy(object):
         variables["safety"] = True
         stock = self.search(variables)
 
-        key = [i for i in list(stock.keys()) if i.isdigit() and 1500 < int(i)]
+        excludeList = list(range(1700)) + list(range(2030, 2070)) + list(range(2050, 2517))
+
+        key = [i for i in list(stock.keys()) if i.isdigit() and int(i) not in excludeList]
         extractedKey = []
         for i in key:
             flag = True
