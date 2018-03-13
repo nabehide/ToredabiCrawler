@@ -251,7 +251,7 @@ class TradeDerPy(object):
                         columns=self.columnsHold,
                     ), ignore_index=True
                 )
-            except IndexError:
+            except (IndexError, AttributeError):
                 pass
 
         message = timeStamp() + "Success get Hold"
@@ -271,9 +271,11 @@ class TradeDerPy(object):
         variables["safety"] = True
         stock = self.search(variables)
 
-        excludeList = list(range(1700)) + list(range(2030, 2070)) + list(range(2050, 2517))
+        excludeList = list(range(1700)) + list(range(2030, 2070)) + \
+            list(range(2050, 2517))
 
-        key = [i for i in list(stock.keys()) if i.isdigit() and int(i) not in excludeList]
+        key = [i for i in list(stock.keys()) if i.isdigit() and int(
+               i) not in excludeList]
         extractedKey = []
         for i in key:
             flag = True
