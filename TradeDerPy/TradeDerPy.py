@@ -227,30 +227,31 @@ class TradeDerPy(object):
         for tag in soup.select(".stockData"):
             try:
                 tagQuote = tag.find(href=re.compile("/td/quotes"))
-                stockName = tagQuote.text
-                url = mainURL + tagQuote.get("href")
-                tagALR = tag.select(".alR")
-                rateDay = float(tagALR[len(tagALR) - 2].text[:-2])
-                rateOwn = float(tagALR[len(tagALR) - 1].text[:-2])
-                sellURL = mainURL + tag.select(".sell")[0].get("href")
-                quantity = tagALR[0].text
-                star = -3
-                for i in range(-2, 3):
-                    star = tag.select(".omamoriSuggest")[0].select(
-                        ".omamoriSuggestStar" + str(i))
-                    if len(star) != 0:
-                        star = i
-                        break
-                safety = True if len(
-                    tag.select(".omamoriSafety")) != 0 else False
-                unitPrice = tagALR[2].text
-                self.hold = self.hold.append(
-                    pd.DataFrame(
-                        [[stockName, url, rateDay, rateOwn, sellURL, quantity,
-                          star, safety, unitPrice]],
-                        columns=self.columnsHold,
-                    ), ignore_index=True
-                )
+                if tagQuote is not None:
+                    stockName = tagQuote.text
+                    url = mainURL + tagQuote.get("href")
+                    tagALR = tag.select(".alR")
+                    rateDay = float(tagALR[len(tagALR) - 2].text[:-2])
+                    rateOwn = float(tagALR[len(tagALR) - 1].text[:-2])
+                    sellURL = mainURL + tag.select(".sell")[0].get("href")
+                    quantity = tagALR[0].text
+                    star = -3
+                    for i in range(-2, 3):
+                        star = tag.select(".omamoriSuggest")[0].select(
+                            ".omamoriSuggestStar" + str(i))
+                        if len(star) != 0:
+                            star = i
+                            break
+                    safety = True if len(
+                        tag.select(".omamoriSafety")) != 0 else False
+                    unitPrice = tagALR[2].text
+                    self.hold = self.hold.append(
+                        pd.DataFrame(
+                            [[stockName, url, rateDay, rateOwn, sellURL,
+                              quantity, star, safety, unitPrice]],
+                            columns=self.columnsHold,
+                        ), ignore_index=True
+                    )
             except (IndexError, AttributeError):
                 pass
 
