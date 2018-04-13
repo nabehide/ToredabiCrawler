@@ -29,7 +29,7 @@ $ python setup.py install
 - まずimportとログインに必要な設定などを書きます。
 
 ``` examples.py
-import TradeDerPy.TradeDerPy import TradeDerPy
+import TradeDerPy import TradeDerPy
 
 # ログインしたいアカウントのユーザーネームとパスワード
 account = {"username": "YOUR_USERNAME", "password": "YOUR_PASSWORD"}
@@ -53,7 +53,7 @@ td.login()  # ログイン
 - 情報を取得・表示できます。
 ```
 td.getStatus()  # 現在の取引状況（取引できる状態か）を取得
-td.showStatus()  # 取引状況を取得
+td.showStatus()  # 取引状況を表示
 
 td.getHold()  # 現在持っている株の情報を取得
 td.showHold()  # 持っている株の情報を表示

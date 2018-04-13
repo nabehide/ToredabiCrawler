@@ -28,7 +28,7 @@ $ python setup.py install
 ### import
 
 ```
-import TradeDerPy.TradeDerPy import TradeDerPy
+import TradeDerPy import TradeDerPy
 
 account = {"username": "YOUR_USERNAME", "password": "YOUR_PASSWORD"}
 
