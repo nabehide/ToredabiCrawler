@@ -3,7 +3,6 @@
 import re
 import random
 from datetime import datetime
-import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import selenium.common.exceptions as EC
@@ -33,11 +32,12 @@ class TradeDerPy(object):
             "name", "URL", "rateDay", "rateHold", "sellURL", "quantity",
             "star", "safety", "unitPrice",
         ]
-        self.hold = pd.DataFrame(columns=self.columnsHold)
         self.columnsSuggested = [
-            "name", "URL",
+            "num", "name", "URL", "rateDay", "rateHold", "sellURL", "quantity",
+            "star", "safety", "unitPrice",
         ]
-        self.suggested = pd.DataFrame(columns=self.columnsSuggested)
+        self.hold = []
+        self.suggested = []
         self.orderURL = {}
         self.asset = 0
         self.power = 0
@@ -76,21 +76,34 @@ class TradeDerPy(object):
     def search(self, variables):
         queryTraded = "&traded=true" if variables["traded"] else ""
         queryCommand = "&command=" + variables["command"]
-        queryIdx1 = "&idx1=true" if variables["idx1"] else "&idx1=" if variables["idx1"] is None else "&idx1=false"
-        queryMinUnitPrice = "&lospl=" if variables["minUnitPrice"] is None else "&lospl=" + str(variables["minUnitPrice"])
-        queryMaxUnitPrice = "&losph=" if variables["maxUnitPrice"] is None else "&losph=" + str(variables["maxUnitPrice"])
-        queryMinmkcp = "&mkcpl=" if variables["minmkcp"] is None else "&mkcpl=" + str(variables["minmkcp"])
-        queryMaxmkcp = "&mkcph=" if variables["maxmkcp"] is None else "&mkcph=" + str(variables["maxmkcp"])
-        queryMinPBR = "&cpbrl=" if variables["minPBR"] is None else "&cpbrl=" + str(variables["minPBR"])
-        queryMaxPBR = "&cpbrh=" if variables["maxPBR"] is None else "&cpbrh=" + str(variables["maxPBR"])
-        queryMinPER = "&cperl=" if variables["minPER"] is None else "&cperl=" + str(variables["minPER"])
-        queryMaxPER = "&cperh=" if variables["maxPER"] is None else "&cperh=" + str(variables["maxPER"])
-        querySuggest = "" if variables["suggest"] == 0 else "&suggest=" + str(variables["suggest"])
+        queryIdx1 = "&idx1=true" if variables["idx1"] else "&idx1=" \
+            if variables["idx1"] is None else "&idx1=false"
+        queryMinUnitPrice = "&lospl=" if variables["minUnitPrice"] is None \
+            else "&lospl=" + str(variables["minUnitPrice"])
+        queryMaxUnitPrice = "&losph=" if variables["maxUnitPrice"] is None \
+            else "&losph=" + str(variables["maxUnitPrice"])
+        queryMinmkcp = "&mkcpl=" if variables["minmkcp"] is None \
+            else "&mkcpl=" + str(variables["minmkcp"])
+        queryMaxmkcp = "&mkcph=" if variables["maxmkcp"] is None \
+            else "&mkcph=" + str(variables["maxmkcp"])
+        queryMinPBR = "&cpbrl=" if variables["minPBR"] is None \
+            else "&cpbrl=" + str(variables["minPBR"])
+        queryMaxPBR = "&cpbrh=" if variables["maxPBR"] is None \
+            else "&cpbrh=" + str(variables["maxPBR"])
+        queryMinPER = "&cperl=" if variables["minPER"] is None \
+            else "&cperl=" + str(variables["minPER"])
+        queryMaxPER = "&cperh=" if variables["maxPER"] is None \
+            else "&cperh=" + str(variables["maxPER"])
+        querySuggest = "" if variables["suggest"] == 0 \
+            else "&suggest=" + str(variables["suggest"])
         querySafery = "&safety=true" if variables["safery"] else ""
 
-        searchPath = ("/td/quotes/query?query=&exch=&jsec=" + queryTraded + queryCommand + queryIdx1 +
-                      queryMinUnitPrice + queryMaxUnitPrice + queryMinmkcp + queryMaxmkcp + queryMinPBR + queryMaxPBR +
-                      queryMinPER + queryMaxPER + querySuggest + querySafery + "&sort_rank1=quote_code+asc")
+        searchPath = (
+            "/td/quotes/query?query=&exch=&jsec=" + queryTraded +
+            queryCommand + queryIdx1 + queryMinUnitPrice +
+            queryMaxUnitPrice + queryMinmkcp + queryMaxmkcp + queryMinPBR +
+            queryMaxPBR + queryMinPER + queryMaxPER +
+            querySuggest + querySafery + "&sort_rank1=quote_code+asc")
         self.driver.get(mainURL + searchPath)
 
         soup, text = self._getSoupText()
@@ -220,7 +233,7 @@ class TradeDerPy(object):
             print(list(self.orderURL.keys())[i])
 
     def getHold(self):
-        self.hold = pd.DataFrame(columns=self.columnsHold)
+        self.hold = []
 
         self.driver.get(mainURL + PositionHoldPath)
         soup, text = self._getSoupText()
@@ -245,13 +258,9 @@ class TradeDerPy(object):
                     safety = True if len(
                         tag.select(".omamoriSafety")) != 0 else False
                     unitPrice = tagALR[2].text
-                    self.hold = self.hold.append(
-                        pd.DataFrame(
-                            [[stockName, url, rateDay, rateOwn, sellURL,
-                              quantity, star, safety, unitPrice]],
-                            columns=self.columnsHold,
-                        ), ignore_index=True
-                    )
+                    self.hold.append([
+                        stockName, url, rateDay, rateOwn, sellURL, quantity,
+                        star, safety, unitPrice])
             except (IndexError, AttributeError):
                 pass
 
@@ -261,11 +270,13 @@ class TradeDerPy(object):
         return message
 
     def showHold(self):
-        columnsShow = [i for i in self.columnsHold if "URL" not in i]
-        print(self.hold[columnsShow])
+        for i in range(len(self.hold)):
+            for j in range(len(self.hold[i])):
+                print(self.hold[i][j], " ", end="")
+            print()
 
     def getSuggested(self):
-        self.suggested = pd.DataFrame(columns=self.columnsSuggested)
+        self.suggested = []
 
         variables = defaultSearchVariables
         variables["suggest"] = 2
@@ -284,17 +295,16 @@ class TradeDerPy(object):
                 if i in j:
                     flag = False
                     break
-            for j in list(self.hold["name"]):
+            nameList = [self.hold[i][
+                self.columnsHold.index("name")] for i in range(len(self.hold))]
+            for j in nameList:
                 if flag and i in j:
                     flag = False
                     break
             if flag:
                 extractedKey.append(i)
         for i in extractedKey:
-            self.suggested = self.suggested.append(
-                pd.DataFrame([[i, stock[i]]], columns=self.columnsSuggested),
-                ignore_index=True,
-            )
+            self.suggested.append([i, stock[i]])
 
         message = timeStamp() + "Success get suggested"
         if self.debug:
@@ -302,7 +312,8 @@ class TradeDerPy(object):
         return message
 
     def showSuggested(self):
-        print(self.suggested)
+        for i in range(len(self.suggested)):
+            print(self.suggested[i])
 
     def buySuggestedStock(self):
         if len(self.suggested) == 0:
@@ -314,7 +325,8 @@ class TradeDerPy(object):
         ret = ""
         for idx in range(len(self.suggested)):
             ret += self.buy(
-                self.suggested["name"][idx], self.asset * 0.05,
+                self.suggested[idx][self.columnsSuggested.index("name")],
+                self.asset * 0.05
             ) + "\n"
             # if "Fail" in ret:
             #     break
@@ -330,9 +342,9 @@ class TradeDerPy(object):
             return False
 
         idx = random.randint(0, len(self.hold) - 1)
-        name = self.hold["name"].iloc[idx]
-        url = self.hold["sellURL"].iloc[idx]
-        quantity = self.hold["quantity"].iloc[idx]
+        name = self.hold[idx][self.columnsHold.index("name")]
+        url = self.hold[idx][self.columnsHold.index("sellURL")]
+        quantity = self.hold[idx][self.columnsHold.index("quantity")]
         ret = self.sell(name, url, quantity) + "\n"
 
         message = ret + timeStamp() + "Success sell random"
@@ -341,7 +353,10 @@ class TradeDerPy(object):
         return message
 
     def sellCutLoss(self):
-        candidate = self.hold[self.hold["star"] <= 0]
+        candidate = []
+        for i in range(len(self.hold)):
+            if self.hold[i][self.columnsHold.index("star")] <= 0:
+                candidate.append(self.hold[i])
 
         if len(candidate) == 0:
             message = timeStamp() + "Fail sell CutLoss: No candidate"
@@ -351,12 +366,16 @@ class TradeDerPy(object):
         else:
             ret = ""
             for i in range(len(candidate)):
-                name = candidate.iloc[i].loc["name"]
-                url = candidate.iloc[i].loc["sellURL"]
-                quantity = candidate.iloc[i].loc["quantity"]
+                name = candidate[i][self.columnsHold.index("name")]
+                url = candidate[i][self.columnsHold.index("url")]
+                quantity = candidate[i][self.columnsHold.index("quantity")]
                 ret += self.sell(name, url, quantity) + "\n"
 
-            self.hold = self.hold[0 < self.hold["star"]]
+            h = []
+            for i in range(len(self.hold)):
+                if 0 < self.hold[i][self.columnsHold.index("star")]:
+                    h.append(self.hold[i])
+            self.hold = h
 
             message = ret + timeStamp() + "Success sell cut loss"
             if self.debug:
@@ -364,10 +383,12 @@ class TradeDerPy(object):
             return message
 
     def sellProfitable(self):
-        candidate = self.hold[
-            # (self.hold["star"] <= 1) & (10 < self.hold["rateHold"][:-2])
-            (self.hold["star"] <= 1) & (10 < self.hold["rateHold"])
-        ]
+        candidate = []
+        for i in range(len(self.hold)):
+            if self.hold[i][self.columnsHold.index("star")] <= 1 and \
+                    10 < self.hold[i][self.columnsHold.index("rateHold")]:
+                candidate.append(self.hold[i])
+
         if len(candidate) == 0:
             message = timeStamp() + "Fail sell profirable: No candidate"
             if self.debug:
@@ -376,12 +397,15 @@ class TradeDerPy(object):
         else:
             ret = ""
             for i in range(len(candidate)):
-                name = candidate.iloc[i].loc["name"]
-                url = candidate.iloc[i].loc["sellURL"]
-                quantity = candidate.iloc[i].loc["quantity"]
+                name = candidate[i][self.columnsHold.index("name")]
+                url = candidate[i][self.columnsHold.index("url")]
+                quantity = candidate[i][self.columnsHold.index("quantity")]
                 ret += self.sell(name, url, quantity) + "\n"
 
-            self.hold = self.hold[0 < self.hold["star"]]
+            h = []
+            for i in range(len(self.hold)):
+                if 0 < self.hold[i][self.columnsHold.index("star")]:
+                    h.append(self.hold[i])
 
             message = ret + timeStamp() + "Success sell cut loss"
             if self.debug:
