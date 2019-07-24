@@ -29,7 +29,7 @@ $ python setup.py install
 - まずimportとログインに必要な設定などを書きます。
 
 ``` examples.py
-import TradeDerPy import TradeDerPy
+from TradeDerPy import TradeDerPy
 
 # ログインしたいアカウントのユーザーネームとパスワード
 account = {"username": "YOUR_USERNAME", "password": "YOUR_PASSWORD"}
